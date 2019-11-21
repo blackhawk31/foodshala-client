@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <meta name="description" content="" />
+    <title>Foodshala</title>
+
+    <link href="bootstrap.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header>
+      <div class="navbar navbar-dark bg-dark shadow-sm">
+        <div class="container d-flex justify-content-between">
+          <a href="/" class="navbar-brand d-flex align-items-center">
+            <strong>Foodshala</strong>
+          </a>
+          <nav class="my-2 my-md-0 mr-md-3">
+            <a class="pr-2 text-light r-only" id="orders-btn" href="orders.html"
+              >Orders</a
+            >
+            <a
+              class="btn btn-outline-light"
+              href="login.html"
+              id="login-header-btn"
+            >
+              Login
+            </a>
+            <a class="text-light" id="welcome-header">Welcome, User</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main role="main">
+      <section class="jumbotron text-center">
+        <div class="container">
+          <h1 class="jumbotron-heading name">Foodshala</h1>
+        </div>
+      </section>
+
+      <div class="">
+        <div class="container">
+          <div class="row" id="menu">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Orders</th>
+                  <th scope="col"></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script src="jquery.js"></script>
+    <script src="bootstrap.js"></script>
+    <script>
+      const URL = "https://whispering-gorge-70194.herokuapp.com/api";
+      jQuery(document).ready($ => {
+        if (localStorage.getItem("token") && localStorage.getItem("user")) {
+          const user = JSON.parse(localStorage.getItem("user"));
+          $("#login-header-btn").hide();
+          $("#welcome-header")
+            .html("Welcome, " + user.name)
+            .show();
+          if (user.type === "restaurant") {
+            $("#orders-btn").show();
+          } else {
+            $("#orders-btn").hide();
+            window.location = "/";
+          }
+        } else {
+          window.location = "/";
+        }
+        $.ajax({
+          type: "GET",
+          url: URL + "/restaurant/orders",
+          headers: {
+            auth: localStorage.getItem("token")
+          },
+          success: function(data) {
+            console.log(data);
+
+            const cardTemplate = `
+            <tr>
+              <td>{{index}}</td>
+              <td><p>{{orders}}</p></td>
+            </tr>
+          `;
+            if (data.success) {
+              data.data.orders.forEach((element, index) => {
+                let s = "";
+                element.items.forEach(e => {
+                  s += e.item.name + ": " + e.quantity + " units, ";
+                });
+                s += "Order by " + element.customer.name;
+                const c = cardTemplate
+                  .replace("{{index}}", index + 1)
+                  .replace("{{orders}}", s);
+                $("tbody").append(c);
+              });
+            }
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

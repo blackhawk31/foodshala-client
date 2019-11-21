@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <meta name="description" content="" />
+    <title>Foodshala</title>
+
+    <link href="bootstrap.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header>
+      <div class="navbar navbar-dark bg-dark shadow-sm">
+        <div class="container d-flex justify-content-between">
+          <a href="/" class="navbar-brand d-flex align-items-center">
+            <strong>Foodshala</strong>
+          </a>
+          <nav class="my-2 my-md-0 mr-md-3">
+            <a
+              class="btn btn-outline-light"
+              href="login.html"
+              id="login-header-btn"
+            >
+              Login
+            </a>
+            <a class="text-light" id="welcome-header">Welcome, User</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main role="main">
+      <section class="jumbotron text-center">
+        <div class="container">
+          <h1 class="jumbotron-heading">Foodshala</h1>
+        </div>
+      </section>
+
+      <div class="album py-5 bg-light">
+        <div class="container">
+          <div class="row" id="restaurants-list"></div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="text-muted">
+      <div class="container">
+        <p class="float-right">
+          <a href="#">Back to top</a>
+        </p>
+        <p>Foodshala</p>
+      </div>
+    </footer>
+    <script src="jquery.js"></script>
+    <script src="bootstrap.js"></script>
+    <script>
+      const URL = "https://whispering-gorge-70194.herokuapp.com/api";
+      jQuery(document).ready($ => {
+        if (localStorage.getItem("token") && localStorage.getItem("user")) {
+          const user = JSON.parse(localStorage.getItem("user"));
+          $("#login-header-btn").hide();
+          $("#welcome-header")
+            .html("Welcome, " + user.name)
+            .show();
+        } else {
+          $("#login-header-btn").show();
+          $("#welcome-header").hide();
+        }
+        $.get(URL + "/restaurant/all", function(data) {
+          const cardTemplate = `
+            <div class="col-md-4">
+              <div class="card mb-4 shadow-sm">
+                <svg class="bd-placeholder-img card-img-top" width="100%" height="225" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" focusable="false" role="img" aria-label="Placeholder: Thumbnail"><title>Placeholder</title><rect width="100%" height="100%" fill="#55595c"/><text x="50%" y="50%" fill="#eceeef" dy=".3em">Thumbnail</text></svg>
+                <div class="card-body">
+                  <p class="card-text"><a href="restaurant.html?id={{id}}">{{name}}</a></p>
+                </div>
+              </div>
+            </div>
+          `;
+          if (data.success) {
+            data.data.restaurants.forEach(element => {
+              const c = cardTemplate
+                .replace("{{name}}", element.name)
+                .replace("{{id}}", element._id);
+              $("#restaurants-list").append(c);
+            });
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

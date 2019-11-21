@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <meta name="description" content="" />
+    <title>Foodshala</title>
+
+    <link href="bootstrap.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header>
+      <div class="navbar navbar-dark bg-dark shadow-sm">
+        <div class="container d-flex justify-content-between">
+          <a href="/" class="navbar-brand d-flex align-items-center">
+            <strong>Foodshala</strong>
+          </a>
+          <nav class="my-2 my-md-0 mr-md-3">
+            <a class="pr-2 text-light r-only" id="orders-btn" href="orders.html"
+              >Orders</a
+            >
+            <a
+              class="btn btn-outline-light"
+              href="login.html"
+              id="login-header-btn"
+            >
+              Login
+            </a>
+            <a class="text-light" id="welcome-header">Welcome, User</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main role="main">
+      <section class="jumbotron text-center">
+        <div class="container">
+          <h1 class="jumbotron-heading name">Foodshala</h1>
+        </div>
+      </section>
+
+      <div class="">
+        <div class="container">
+          <div class="row" id="menu">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Item</th>
+                  <th scope="col"></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <button
+              type="button"
+              class="btn btn-success c-only mr-2"
+              id="buy-btn"
+            >
+              Buy now
+            </button>
+            <button type="button" class="btn btn-info r-only" id="add-btn">
+              Add a new item
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script src="jquery.js"></script>
+    <script src="bootstrap.js"></script>
+    <script>
+      const URL = "https://whispering-gorge-70194.herokuapp.com/api";
+      jQuery(document).ready($ => {
+        $.urlParam = function(name) {
+          var results = new RegExp("[\?&]" + name + "=([^&#]*)").exec(
+            window.location.search
+          );
+          return results !== null ? results[1] || 0 : false;
+        };
+        if (localStorage.getItem("token") && localStorage.getItem("user")) {
+          const user = JSON.parse(localStorage.getItem("user"));
+          $("#login-header-btn").hide();
+          $("#welcome-header")
+            .html("Welcome, " + user.name)
+            .show();
+          if (user.id == $.urlParam("id")) {
+            $(".r-only").show();
+          } else {
+            $(".r-only").hide();
+          }
+          if (user.type === "restaurant") {
+            $("#orders-btn").show();
+          } else {
+            $("#orders-btn").hide();
+          }
+        } else {
+          $("#login-header-btn").show();
+          $("#welcome-header").hide();
+          $(".r-only").hide();
+          $("#orders-btn").hide();
+        }
+        if ($.urlParam("id")) {
+          $.get(URL + "/restaurant/" + $.urlParam("id"), function(data) {
+            if (data.success) {
+              const { name, items } = data.data.restaurant;
+              $("h1.name").html(name);
+              if (items.length === 0) {
+                $("#buy-btn").hide();
+              }
+              const rowTemplate = `
+                <tr>
+                  <td>{{index}}</td>
+                  <td>{{name}}</td>
+                  <td>
+                    <div
+                      class="btn-group c-only"
+                      role="group"
+                      aria-label="Basic example"
+                    >
+                      <button
+                        type="button"
+                        class="btn btn-secondary add-item"
+                        data-id="{{id}}"
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-secondary quantity"
+                        disabled
+                        data-id="{{id}}"
+                      >
+                        0
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-secondary remove-item"
+                        data-id="{{id}}"
+                      >
+                        -
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+              const cart = [];
+              items.forEach((element, index) => {
+                const c = rowTemplate
+                  .replace("{{index}}", index + 1)
+                  .replace(/{{id}}/g, element._id)
+                  .replace("{{name}}", element.name);
+                $("tbody").append(c);
+                cart.push({ item: element._id, quantity: 0 });
+              });
+              console.log($("button.add-item"));
+              $(".add-item").on("click", function() {
+                cart.forEach(c => {
+                  if (c.item == $(this).data("id")) {
+                    c.quantity++;
+                    $('.quantity[data-id="' + $(this).data("id") + '"]').html(
+                      c.quantity
+                    );
+                  }
+                });
+              });
+              $(".remove-item").on("click", function() {
+                cart.forEach(c => {
+                  if (c.item == $(this).data("id")) {
+                    if (c.quantity > 0) {
+                      c.quantity--;
+                      $('.quantity[data-id="' + $(this).data("id") + '"]').html(
+                        c.quantity
+                      );
+                    }
+                  }
+                });
+              });
+              $("#buy-btn").on("click", function() {
+                if (
+                  !(
+                    localStorage.getItem("token") &&
+                    JSON.parse(localStorage.getItem("user")).type === "customer"
+                  )
+                ) {
+                  alert(
+                    "Only customers can buy. Log in as a customer to proceed."
+                  );
+                } else {
+                  const data = {
+                    id: $.urlParam("id"),
+                    items: cart
+                  };
+                  $.post({
+                    type: "POST",
+                    url: URL + "/order",
+                    data: JSON.stringify(data),
+                    dataType: "json",
+                    contentType: "application/json",
+                    headers: {
+                      auth: localStorage.getItem("token")
+                    },
+                    success: function(data) {
+                      console.log(data);
+
+                      if (data.success) {
+                        alert("Order placed successfully.");
+                        window.location = "/";
+                      }
+                    }
+                  });
+                }
+              });
+              $("#add-btn").on("click", function() {
+                const name = prompt("Enter the name of the item.");
+                const price = prompt("Enter the price of the item.");
+                if (name != null && price != null) {
+                  const data = {
+                    name,
+                    price: parseFloat(price)
+                  };
+                  $.post({
+                    type: "POST",
+                    url: URL + "/restaurant/addItem",
+                    data: JSON.stringify(data),
+                    dataType: "json",
+                    contentType: "application/json",
+                    headers: {
+                      auth: localStorage.getItem("token")
+                    },
+                    success: function(data) {
+                      console.log(data);
+
+                      if (data.success) {
+                        alert("Item added successfully.");
+                        window.location.reload();
+                      }
+                    }
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
